@@ -60,7 +60,7 @@ it('Should be able to use callback as customSnapshotIdentifier', () => {
 });
 
 it('mutates original state', () => {
-    const originalState = { some: 'value' };
+    const originalState: { some: string, another?: string } = { some: 'value' };
     updateSnapshotState(originalState, { another: 'val' });
     expect(originalState).toEqual({ some: 'value', another: 'val' });
 });

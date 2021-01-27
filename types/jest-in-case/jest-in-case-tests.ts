@@ -25,15 +25,15 @@ afterEach(() => {
 test('array', () => {
     const title = 'add(augend, addend)';
 
-    const tester = jest.fn((opts, cb) => {
-        expect(add(opts.augend, opts.addend)).toBe(opts.total);
-    });
-
     const testCases = [
         { name: '1 + 1 = 2', augend: 1, addend: 1, total: 2 },
         { name: '2 + 1 = 3', augend: 2, addend: 1, total: 3 },
         { name: '3 + 1 = 4', augend: 3, addend: 1, total: 4 },
     ];
+
+    const tester: (testCase: typeof testCases[0], cb?: any) => void = jest.fn((opts, cb) => {
+        expect(add(opts.augend, opts.addend)).toBe(opts.total);
+    });
 
     cases(title, tester, testCases);
 
