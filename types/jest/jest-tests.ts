@@ -865,10 +865,13 @@ describe('', () => {
         expect(jest.fn()).toBeCalledWith('jest');
         expect(jest.fn()).toBeCalledWith({}, {});
 
+        const fn: (s: string, n: number) => any = jest.fn();
         // $ExpectError
-        expect(jest.fn()).toBeCalledWith<[string, number]>(1, 'two');
+        expect(fn).toBeCalledWith(1, 'two');
         // $ExpectError
-        expect({}).toEqual<{ p1: string, p2: number }>({ p1: 'hello' });
+        expect({p1: 'string', p2: 3}).toEqual({ p1: 'hello' });
+        // $ExpectError
+        expect({foo: 3}).toEqual({ p1: 'hello' });
 
         expect(0).toBeCloseTo(1);
         expect(0).toBeCloseTo(1, 2);
@@ -903,12 +906,12 @@ describe('', () => {
         expect(NaN).toBeNaN();
         expect(Infinity).toBeNaN();
 
-        expect([]).toContain({});
+        expect([{}]).toContain({});
         expect(['abc']).toContain('abc');
         expect(['abc']).toContain('def');
         expect('abc').toContain('bc');
 
-        expect([]).toContainEqual({});
+        expect([{}]).toContainEqual({});
         expect(['abc']).toContainEqual('def');
 
         expect([]).toEqual([]);
@@ -1120,11 +1123,11 @@ describe('', () => {
         // $ExpectError
         nonPromiseMatchers.toMatchInlineSnapshot({notthing: extendedExpect.any(Boolean)});
 
-        let promiseMatchers: jest.PromiseMatchers<typeof matchers> = matchers.rejects;
+        let promiseMatchers: jest.PromiseMatchers<any> = matchers.rejects;
         if (isNot) {
             promiseMatchers = matchers.rejects.not;
         }
-        // $ExpectType Promise<void>
+        // $ExpectType any
         promiseMatchers.customMatcher({prop: ''}, true);
 
         // retains built in asymmetric matcher

@@ -693,67 +693,56 @@ declare namespace jest {
         getState(): MatcherState & Record<string, any>;
     }
 
-    type JestMatchers<T> = JestMatchersShape<Matchers<void, T>, Matchers<Promise<void>, T>>;
+    type PromiseOf<T> = T extends Promise<infer S> ? S : never;
+    type JestMatchers<T> = JestMatchersShape<Matchers<void, T>, Matchers<Promise<void>, PromiseOf<T>>, Matchers<Promise<void>, any>>;
 
-    type JestMatchersShape<TNonPromise extends {} = {}, TPromise extends {} = {}> = {
+    type JestMatchersShape<TNonPromise extends {} = {}, TResolve extends {} = {}, TReject extends {} = {}> = {
         /**
          * Use resolves to unwrap the value of a fulfilled promise so any other
          * matcher can be chained. If the promise is rejected the assertion fails.
          */
-        resolves: AndNot<TPromise>,
+        resolves: AndNot<TResolve>,
         /**
          * Unwraps the reason of a rejected promise so any other matcher can be chained.
          * If the promise is fulfilled the assertion fails.
          */
-        rejects: AndNot<TPromise>
+        rejects: AndNot<TReject>
     } & AndNot<TNonPromise>;
     type AndNot<T> = T & {
         not: T
     };
 
+    type JasmineMatcher =
+        | ReturnType<typeof jasmine.any>
+        | ReturnType<typeof jasmine.arrayContaining>
+        | ReturnType<typeof jasmine.objectContaining>;
+
     // should be R extends void|Promise<void> but getting dtslint error
     interface Matchers<R, T = {}> {
         /**
          * Ensures the last call to a mock function was provided specific args.
-         *
-         * Optionally, you can provide a type for the expected arguments via a generic.
-         * Note that the type must be either an array or a tuple.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        lastCalledWith<E extends any[]>(...args: E): R;
+        lastCalledWith(...args: T extends (...args: any) => any ? Parameters<T> : any[]): R;
         /**
          * Ensure that the last call to a mock function has returned a specified value.
-         *
-         * Optionally, you can provide a type for the expected value via a generic.
-         * This is particularly useful for ensuring expected objects have the right structure.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        lastReturnedWith<E = any>(value: E): R;
+        lastReturnedWith(value: T extends (...args: any) => any ? ReturnType<T> : any): R;
         /**
          * Ensure that a mock function is called with specific arguments on an Nth call.
          *
          * Optionally, you can provide a type for the expected arguments via a generic.
          * Note that the type must be either an array or a tuple.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        nthCalledWith<E extends any[]>(nthCall: number, ...params: E): R;
+        nthCalledWith(nthCall: number, ...args: T extends (...args: any) => any ? Parameters<T> : any[]): R;
         /**
          * Ensure that the nth call to a mock function has returned a specified value.
-         *
-         * Optionally, you can provide a type for the expected value via a generic.
-         * This is particularly useful for ensuring expected objects have the right structure.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        nthReturnedWith<E = any>(n: number, value: E): R;
+        nthReturnedWith(n: number, value: T extends (...args: any) => any ? ReturnType<T> : any): R;
         /**
          * Checks that a value is what you expect. It uses `Object.is` to check strict equality.
          * Don't use `toBe` with floating-point numbers.
-         *
-         * Optionally, you can provide a type for the expected value via a generic.
-         * This is particularly useful for ensuring expected objects have the right structure.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        toBe<E = any>(expected: E): R;
+        toBe(expected: T | JasmineMatcher): R;
         /**
          * Ensures that a mock function is called.
          */
@@ -764,12 +753,8 @@ declare namespace jest {
         toBeCalledTimes(expected: number): R;
         /**
          * Ensure that a mock function is called with specific arguments.
-         *
-         * Optionally, you can provide a type for the expected arguments via a generic.
-         * Note that the type must be either an array or a tuple.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        toBeCalledWith<E extends any[]>(...args: E): R;
+        toBeCalledWith(...args: T extends (...args: any) => any ? Parameters<T> : any[]): R;
         /**
          * Using exact equality with floating point numbers is a bad idea.
          * Rounding means that intuitive things fail.
@@ -833,31 +818,19 @@ declare namespace jest {
          * Used when you want to check that an item is in a list.
          * For testing the items in the list, this uses `===`, a strict equality check.
          * It can also check whether a string is a substring of another string.
-         *
-         * Optionally, you can provide a type for the expected value via a generic.
-         * This is particularly useful for ensuring expected objects have the right structure.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        toContain<E = any>(expected: E): R;
+        toContain(expected: T extends Array<infer E> ? E : T extends string ? string : never): R;
         /**
          * Used when you want to check that an item is in a list.
          * For testing the items in the list, this matcher recursively checks the
          * equality of all fields, rather than checking for object identity.
-         *
-         * Optionally, you can provide a type for the expected value via a generic.
-         * This is particularly useful for ensuring expected objects have the right structure.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        toContainEqual<E = any>(expected: E): R;
+        toContainEqual(expected: T extends Array<infer E> ? E : never): R;
         /**
          * Used when you want to check that two objects have the same value.
          * This matcher recursively checks the equality of all fields, rather than checking for object identity.
-         *
-         * Optionally, you can provide a type for the expected value via a generic.
-         * This is particularly useful for ensuring expected objects have the right structure.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        toEqual<E = any>(expected: E): R;
+        toEqual(expected: T): R;
         /**
          * Ensures that a mock function is called.
          */
@@ -868,39 +841,23 @@ declare namespace jest {
         toHaveBeenCalledTimes(expected: number): R;
         /**
          * Ensure that a mock function is called with specific arguments.
-         *
-         * Optionally, you can provide a type for the expected arguments via a generic.
-         * Note that the type must be either an array or a tuple.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        toHaveBeenCalledWith<E extends any[]>(...params: E): R;
+        toHaveBeenCalledWith(...args: T extends (...args: any) => any ? Parameters<T> : any[]): R;
         /**
          * Ensure that a mock function is called with specific arguments on an Nth call.
-         *
-         * Optionally, you can provide a type for the expected arguments via a generic.
-         * Note that the type must be either an array or a tuple.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        toHaveBeenNthCalledWith<E extends any[]>(nthCall: number, ...params: E): R;
+        toHaveBeenNthCalledWith(nthCall: number, ...args: T extends (...args: any) => any ? Parameters<T> : any[]): R;
         /**
          * If you have a mock function, you can use `.toHaveBeenLastCalledWith`
          * to test what arguments it was last called with.
-         *
-         * Optionally, you can provide a type for the expected arguments via a generic.
-         * Note that the type must be either an array or a tuple.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        toHaveBeenLastCalledWith<E extends any[]>(...params: E): R;
+        toHaveBeenLastCalledWith(...args: T extends (...args: any) => any ? Parameters<T> : any[]): R;
         /**
          * Use to test the specific value that a mock function last returned.
          * If the last call to the mock function threw an error, then this matcher will fail
          * no matter what value you provided as the expected return value.
-         *
-         * Optionally, you can provide a type for the expected value via a generic.
-         * This is particularly useful for ensuring expected objects have the right structure.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        toHaveLastReturnedWith<E = any>(expected: E): R;
+        toHaveLastReturnedWith(expected: T extends (...args: any) => any ? ReturnType<T> : any): R;
         /**
          * Used to check that an object has a `.length` property
          * and it is set to a certain numeric value.
@@ -910,12 +867,8 @@ declare namespace jest {
          * Use to test the specific value that a mock function returned for the nth call.
          * If the nth call to the mock function threw an error, then this matcher will fail
          * no matter what value you provided as the expected return value.
-         *
-         * Optionally, you can provide a type for the expected value via a generic.
-         * This is particularly useful for ensuring expected objects have the right structure.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        toHaveNthReturnedWith<E = any>(nthCall: number, expected: E): R;
+        toHaveNthReturnedWith(nthCall: number, expected: T extends (...args: any) => any ? ReturnType<T> : any): R;
         /**
          * Use to check if property at provided reference keyPath exists for an object.
          * For checking deeply nested properties in an object you may use dot notation or an array containing
@@ -942,12 +895,8 @@ declare namespace jest {
         toHaveReturnedTimes(expected: number): R;
         /**
          * Use to ensure that a mock function returned a specific value.
-         *
-         * Optionally, you can provide a type for the expected value via a generic.
-         * This is particularly useful for ensuring expected objects have the right structure.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        toHaveReturnedWith<E = any>(expected: E): R;
+        toHaveReturnedWith(expected: T extends (...args: any) => any ? ReturnType<T> : any): R;
         /**
          * Check that a string matches a regular expression.
          */
@@ -973,7 +922,7 @@ declare namespace jest {
          * expect(desiredHouse).toMatchObject<House>(...standardHouse, kitchen: {area: 20}) // wherein standardHouse is some base object of type House
          */
         // tslint:disable-next-line: no-unnecessary-generics
-        toMatchObject<E extends {} | any[]>(expected: E): R;
+        toMatchObject<E extends T | any[]>(expected: E): R;
         /**
          * This ensures that a value matches the most recent snapshot with property matchers.
          * Check out [the Snapshot Testing guide](http://facebook.github.io/jest/docs/snapshot-testing.html) for more information.
@@ -1008,20 +957,12 @@ declare namespace jest {
         toReturnTimes(count: number): R;
         /**
          * Ensure that a mock function has returned a specified value at least once.
-         *
-         * Optionally, you can provide a type for the expected value via a generic.
-         * This is particularly useful for ensuring expected objects have the right structure.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        toReturnWith<E = any>(value: E): R;
+        toReturnWith(expected: T extends (...args: any) => any ? ReturnType<T> : any): R;
         /**
          * Use to test that objects have the same types as well as structure.
-         *
-         * Optionally, you can provide a type for the expected value via a generic.
-         * This is particularly useful for ensuring expected objects have the right structure.
          */
-        // tslint:disable-next-line: no-unnecessary-generics
-        toStrictEqual<E = any>(expected: E): R;
+        toStrictEqual(expected: T): R;
         /**
          * Used to test that a function throws when it is called.
          */
@@ -1064,7 +1005,11 @@ declare namespace jest {
     // Use the `void` type for return types only. Otherwise, use `undefined`. See: https://github.com/Microsoft/dtslint/blob/master/docs/void-return.md
     // have added issue https://github.com/microsoft/dtslint/issues/256 - Cannot have type union containing void ( to be used as return type only
     type ExtendedMatchers<TMatchers extends ExpectExtendMap, TMatcherReturn, TActual> = Matchers<TMatcherReturn, TActual> & {[K in keyof TMatchers]: CustomJestMatcher<TMatchers[K], TMatcherReturn>};
-    type JestExtendedMatchers<TMatchers extends ExpectExtendMap, TActual> = JestMatchersShape<ExtendedMatchers<TMatchers, void, TActual>, ExtendedMatchers<TMatchers, Promise<void>, TActual>>;
+    type JestExtendedMatchers<TMatchers extends ExpectExtendMap, TActual> = JestMatchersShape<
+        ExtendedMatchers<TMatchers, void, TActual>,
+        ExtendedMatchers<TMatchers, Promise<void>, TActual>,
+        ExtendedMatchers<TMatchers, Promise<void>, any>
+    >;
 
     // when have called expect.extend
     type ExtendedExpectFunction<TMatchers extends ExpectExtendMap> = <TActual>(actual: TActual) => JestExtendedMatchers<TMatchers, TActual>;
